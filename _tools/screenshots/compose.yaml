@@ -1,0 +1,36 @@
+# A throwaway Gravwell plus a Playwright runner. Use ./run.sh rather than
+# calling this directly; it tears everything down afterward so every run
+# starts from a clean Gravwell.
+name: wiki-screenshots
+
+services:
+  gravwell:
+    image: gravwell/gravwell:${GRAVWELL_VERSION:-5.10.1}
+    environment:
+      GRAVWELL_INGEST_SECRET: screenshots
+      GRAVWELL_INGEST_AUTH: screenshots
+      GRAVWELL_CONTROL_AUTH: screenshots
+      GRAVWELL_SEARCHAGENT_AUTH: screenshots
+    ports:
+      # Handy for poking at the instance while writing recipes.
+      - "127.0.0.1:${GRAVWELL_PORT:-18080}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/api/version"]
+      interval: 2s
+      retries: 30
+
+  shots:
+    image: mcr.microsoft.com/playwright:v1.59.1-noble
+    depends_on:
+      gravwell:
+        condition: service_healthy
+    working_dir: /wiki/_tools/screenshots
+    user: "${SHOTS_UID:-1000}:${SHOTS_GID:-1000}"
+    environment:
+      GRAVWELL_URL: http://gravwell
+      HOME: /tmp
+      NPM_CONFIG_UPDATE_NOTIFIER: "false"
+      CI: ${CI:-}
+    volumes:
+      - ../..:/wiki
+    entrypoint: ["sh", "-c", "npm ci --no-audit --no-fund --loglevel=error && npx playwright test \"$$@\"", "--"]
