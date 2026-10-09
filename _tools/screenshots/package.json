@@ -1,0 +1,11 @@
+{
+  "name": "wiki-screenshots",
+  "private": true,
+  "description": "Regenerates screenshots in the Gravwell docs",
+  "scripts": {
+    "shots": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.59.1"
+  }
+}
